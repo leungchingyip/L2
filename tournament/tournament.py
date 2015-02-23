@@ -11,43 +11,37 @@ def connect():
 
 
 def deleteMatches():
-
+    """Remove all the match records FROM the database."""
     db = connect()
     c = db.cursor()
     c.execute("UPDATE Tournament SET matches=0, wins=0;")
     db.commit()
     db.close()
-    """Remove all the match records FROM the database."""
+    
 
 
 def deletePlayers():
-
+    """Remove all the player records FROM the database."""
     db = connect()
     c = db.cursor()
     c.execute("TRUNCATE Tournament RESTART IDENTITY;")
     db.commit()
     db.close()
-    """Remove all the player records FROM the database."""
+    
 
 
 def countPlayers():
-
+    """Returns the number of players currently registered."""
     db = connect()
     c = db.cursor()
     c.execute("SELECT COUNT(name) FROM Tournament;")
     countplayers = c.fetchall()
     return int(countplayers[0][0])
     db.close()
-    """Returns the number of players currently registered."""
+    
 
 
 def registerPlayer(name):
-
-    db = connect()
-    c = db.cursor()
-    c.execute("INSERT INTO Tournament (name, matches, wins) values((%s), 0, 0);", (name,))
-    db.commit()
-    db.close()
     """Adds a player to the Tournament database.
   
     The database assigns a unique serial id number for the player.  (This
@@ -56,16 +50,15 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
+    db = connect()
+    c = db.cursor()
+    c.execute("INSERT INTO Tournament (name, matches, wins) values((%s), 0, 0);", (name,))
+    db.commit()
+    db.close()
+
 
 
 def playerStandings():
-
-    db = connect()
-    c = db.cursor()
-    c.execute("SELECT * FROM Standing")
-    return c.fetchall()
-    db.close()
-
     """Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
@@ -78,10 +71,22 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT * FROM Standing")
+    standing=c.fetchall()
+    db.close()
+    return standing
+
 
 
 def reportMatch(winner, loser):
+    """Records the outcome of a single match between two players.
 
+    Args:
+      winner:  the id number of the player who won
+      loser:  the id number of the player who lost
+    """
     db = connect()
     c = db.cursor()
     c.execute('''
@@ -89,39 +94,14 @@ def reportMatch(winner, loser):
                                          WHEN id=%d THEN wins+0 END),
                               matches=matches+1
                               WHERE id IN (%d, %d);
-    '''%(winner,loser, winner, loser,))
+    '''%(winner, loser, winner, loser,))
     db.commit()
     db.close()
-    """Records the outcome of a single match between two players.
 
-    Args:
-      winner:  the id number of the player who won
-      loser:  the id number of the player who lost
-    """
  
  
 def swissPairings():
-    pairlist=[]
-    db = connect()
-    c = db.cursor()
-
-    totalplayers= countPlayers()
-    for i in range (1, totalplayers/2+1):
-        offset_number = (i-1)*2
-        c.execute("SELECT id, name FROM standing LIMIT 2 OFFSET %d" %(offset_number,))
-
-        p = c.fetchall()
-        p = p[0] +p[1]
-        pairlist.insert(i, p)
-    return pairlist
-    db.close()
-
     """Returns a list of pairs of players for the next round of a match.
-  
-    Assuming that there are an even number of players registered, each player
-    appears exactly once in the pairings.  Each player is paired with another
-    player with an equal or nearly-equal win record, that is, a player adjacent
-    to him or her in the standings.
   
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
@@ -130,5 +110,20 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    pairlist=[]
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT id, name FROM standing;")
+    standing_list=c.fetchall()
+    totalplayers= countPlayers()
+    db.close()
+
+    for i in range (0, totalplayers/2):
+        p = standing_list[i*2] + standing_list[i*2+1] 
+        pairlist.insert(i, p)
+    return pairlist
+
+
+
 
 
